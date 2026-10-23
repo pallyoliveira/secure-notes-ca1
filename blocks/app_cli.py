@@ -193,7 +193,7 @@ def do_list():
         print(f" {number} {safe_terminal_text(item['text'])}") 
     rule() 
 
-def check_message(original_text, text):
+def validate_note_input(original_text, text):
     if text != original_text:
         print("  Warning: Non-printable characters were removed.")
     good, message = validate.item_text(text)
@@ -206,7 +206,7 @@ def do_add():
     print()
     original_text = input("  " + bold("New note: ")).strip()
     text = safe_terminal_text(original_text)
-    if not check_message(original_text, text):
+    if not validate_note_input(original_text, text):
      return    
     item_id = storage.add_item(current_user, safe_terminal_text(text))
     audit.record("item_added", current_user, f"id={item_id}")
