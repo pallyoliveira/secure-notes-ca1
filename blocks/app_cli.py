@@ -174,42 +174,43 @@ def do_logout():
     ok("Signed out.")
 
 
-def do_list():
-    # PRINCIPLE: Output encoding (command-line version). A terminal is not a
-    # browser, but it does interpret some bytes as instructions — ANSI escape
-    # codes can move the cursor, recolour the screen or clear it. Printing a
-    # stored note straight out means a note containing escape codes could
-    # scramble another user's display.
-    #
-    # The validate_strict block limits what can be stored in the first place.
-    # A stronger version would strip control characters here, at the point of
-    # output, which is where encoding belongs. Worth implementing and writing
-    # up if you want to evidence this control properly on the CLI.
+def safe_terminal_text(text):
+    """Remove control characters before displaying text in the terminal."""
+    return "".join(char for char in str(text) if char.isprintable())
+
+
+def do_list():    
     items = storage.list_items(current_user)
-    print()
-    if not items:
-        print("  " + dim("You have no notes yet. Choose 2 to add one."))
-        return
-    print("  " + bold(f"Your notes") + dim(f"  ({len(items)})"))
-    rule()
-   # Display notes using sequential positions instead of database IDs.
-    for position, item in enumerate(items):
-             number = c(str(position + 1).rjust(3), "36;1")
-             print(f"   {number}  {item['text']}")
-    rule()
+    print()    
+    if not items: 
+        print(" " + dim("You have no notes yet. Choose 2 to add one.")) 
+        return 
+    print(" " + bold(f"Your notes") + dim(f" ({len(items)})")) 
+    rule() 
+    # Display notes using sequential positions instead of database IDs. 
+    for position, item in enumerate(items): 
+        number = c(str(position + 1).rjust(3), "36;1") 
+        print(f" {number} {safe_terminal_text(item['text'])}") 
+    rule() 
 
-
-def do_add():
-    print()
-    text = input("  " + bold("New note: ")).strip()
+def check_message(original_text, text):
+    if text != original_text:
+        print("  Warning: Non-printable characters were removed.")
     good, message = validate.item_text(text)
     if not good:
         fail(message)
-        return
-    item_id = storage.add_item(current_user, text)
+        return False
+    return True
+
+def do_add():
+    print()
+    original_text = input("  " + bold("New note: ")).strip()
+    text = safe_terminal_text(original_text)
+    if not check_message(original_text, text):
+     return    
+    item_id = storage.add_item(current_user, safe_terminal_text(text))
     audit.record("item_added", current_user, f"id={item_id}")
     ok(f"Saved as note.")
-
 
 def do_delete():
     print()
