@@ -27,6 +27,13 @@ import storage
 import auth
 import validate
 import audit
+import logging
+
+logging.basicConfig(
+    filename="error.log",
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 BLOCK_NAME = "App: command-line menu"
 
@@ -193,22 +200,32 @@ def do_list():
         print(f" {number} {safe_terminal_text(item['text'])}") 
     rule() 
 
-def validate_note_input(original_text, text):
-    if text != original_text:
-        print("  Warning: Non-printable characters were removed.")
-    good, message = validate.item_text(text)
-    if not good:
-        fail(message)
-        return False
-    return True
+def save_note(user, original_text, text):
+    try:
+        if original_text != text:
+            raise ValueError("Invalid characters")
+
+        good, message = validate.item_text(text)
+        if not good:
+            raise ValueError(message)
+        return storage.add_item(user, text)
+
+    except ValueError as error:
+        fail(str(error))
+        return None
+
+    except Exception:
+     logging.exception("Failed to save note")
+     fail("Could  not save the note. Please try again.")
+    return None
 
 def do_add():
     print()
     original_text = input("  " + bold("New note: ")).strip()
     text = safe_terminal_text(original_text)
-    if not validate_note_input(original_text, text):
-     return    
-    item_id = storage.add_item(current_user, safe_terminal_text(text))
+    item_id = save_note(current_user, original_text, text)
+    if item_id is None:
+        return
     audit.record("item_added", current_user, f"id={item_id}")
     ok(f"Saved as note.")
 
