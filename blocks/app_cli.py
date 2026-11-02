@@ -253,9 +253,11 @@ def do_delete():
         (item for item in items if item["position"] == position),
         None
     )
+  
 
     if selected_item is None:
         fail("No note with that number.")
+        print(f"Selected item: {selected_item}")  # Debugging line
         return
 
     # Get the real database ID of that note
