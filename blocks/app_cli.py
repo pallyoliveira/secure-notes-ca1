@@ -249,11 +249,12 @@ def do_delete():
     position = int(raw)
 
     # Find the correct note using the user's position
-    selected_item = next(
-        (item for item in items if item["position"] == position),
-        None
-    )
+    if position < 1 or position > len(items):
+     fail("No note with that number.")
+     return
 
+    selected_item = items[position - 1]
+    
     if selected_item is None:
         fail("No note with that number.")
         return
